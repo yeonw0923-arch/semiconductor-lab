@@ -37,11 +37,7 @@ st.markdown("""
     [data-testid="stSidebar"] .stSelectbox { margin-top: -4px !important; margin-bottom: -4px !important; }
     [data-testid="stSidebar"] .stTextArea { margin-top: 4px !important; margin-bottom: -4px !important; }
     [data-testid="stSidebar"] .stTextArea textarea { font-size: 0.78rem !important; }
-    [data-testid="stSidebar"] div.stButton > button {
-        border-radius: 8px !important; font-size: 13px !important; padding: 4px 12px !important;
-        min-height: 32px !important; transition: background-color 0.2s ease;
-    }
-
+    
     /* 메인 영역 카드 스타일 (BJT와 동일) */
     .stat-card {
         background: #ffffff; border-radius: 12px; padding: 16px;
