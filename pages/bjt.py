@@ -159,35 +159,36 @@ else:
 
 mode_full = f"{mode} ({mode_en})"
 
-# ── 단자 전류 (다이오드 지수 모델 — 턴온·역방향 β 반영) ──────
+# ── 단자 전류 (출력특성 함수로 통일 — 동작점이 패밀리 곡선 위에 정확히 놓이도록) ──
 def diode_I(v):
     """순방향 다이오드 전류(A). v<=0이면 ~0, exp 폭주는 V_CLAMP로 제한."""
     if v <= 0:
         return 0.0
     return I_S * (np.exp(min(v, V_CLAMP) / V_T) - 1.0)
 
-if mode_en == "Forward Active":
-    I_C_A = diode_I(V_be)                       # I_C = I_S(exp(V_BE/V_T)-1)
-    I_B_A = I_C_A / beta_F                       # I_B = I_C / β_F
-elif mode_en == "Saturation":
-    I_BE = diode_I(V_be)
-    I_BC = diode_I(V_bc)
-    reduction = max(0.0, 1.0 - I_BC / max(I_BE, 1e-30))   # V_BC가 V_BE에 가까울수록 I_C↓
-    I_C_A = I_BE * reduction
-    I_B_A = I_BE / beta_F + I_BC / beta_R         # 양쪽 접합 베이스 전류 합
-elif mode_en == "Reverse Active":
-    drive = diode_I(V_bc)                         # B-C 순방향이 구동
-    I_C_A = drive * beta_R / (beta_R + 1.0)       # 낮은 이득 β_R
-    I_B_A = drive / (beta_R + 1.0)
-else:  # Cutoff
-    I_C_A = 0.0
-    I_B_A = 0.0
+def ic_of(vce, ib_A):
+    """출력특성 I_C(V_CE, I_B) [mA]. 패밀리 곡선과 동작점이 '같은 식'을 쓰게 통일."""
+    ic_sat = beta * ib_A * 1e3
+    v = max(vce, 0.0)
+    return max(0.0, ic_sat * np.tanh(v / 0.12) * (1.0 + early_k * v))
 
-ic_mA      = I_C_A * 1e3
-ib_uA      = I_B_A * 1e6
 vce_signed = V_be - V_bc                          # V_CE(NPN)/V_EC(PNP) — 단일 일관 값
-beta_disp  = (ic_mA / (ib_uA / 1000.0)) if ib_uA > 1e-3 else 0.0
-beta_str   = f"{beta_disp:.0f}" if beta_disp >= 1 else "—"
+
+if be_fwd:                                        # B-E 순방향 (순방향 활성 + 포화)
+    ib_be_A = diode_I(V_be) / beta_F              # B-E 접합 기반 베이스 전류
+    ib_bc_A = diode_I(V_bc) / beta_R if bc_fwd else 0.0   # 포화 시 B-C 접합 추가 베이스 전류
+    ic_mA   = ic_of(vce_signed, ib_be_A)          # 동작점 I_C — 패밀리와 동일 함수 (포화 knee 자동 반영)
+    ib_uA   = (ib_be_A + ib_bc_A) * 1e6
+elif bc_fwd:                                      # 역방향 활성 (낮은 β_R)
+    drive = diode_I(V_bc)
+    ic_mA = drive * beta_R / (beta_R + 1.0) * 1e3
+    ib_uA = drive / (beta_R + 1.0) * 1e6
+else:                                             # 차단
+    ic_mA = 0.0
+    ib_uA = 0.0
+
+beta_disp = (ic_mA / (ib_uA / 1000.0)) if ib_uA > 1e-3 else 0.0
+beta_str  = f"{beta_disp:.0f}" if beta_disp >= 1 else "—"
 
 # ── 테마 컬러 매핑 (파스텔톤)
 if bjt_type == "NPN":
@@ -507,10 +508,9 @@ with col2:
 
     for idx, ib_uA_c in enumerate(ib_list):
         ib_A_c = ib_uA_c*1e-6
-        ic_sat = beta*ib_A_c*1000
         alpha  = 0.4 + 0.12*idx
         color  = f"rgba({base_color[0]},{base_color[1]},{base_color[2]},{alpha:.2f})"
-        ic_curve = [max(0.0, ic_sat*np.tanh(v/0.12)*(1+early_k*v)) for v in v_arr]
+        ic_curve = [ic_of(v, ib_A_c) for v in v_arr]
         fig_iv.add_trace(go.Scatter(
             x=[sign*v for v in v_arr], y=[sign*ic for ic in ic_curve],
             mode='lines', line=dict(color=color,width=2.5),
