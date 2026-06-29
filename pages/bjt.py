@@ -517,37 +517,41 @@ with col2:
             name=f"I_B={ib_uA_c}μA", showlegend=True))
 
     sat_ic_mag = (V_CC/R_C)*1000
-    # 직류 부하선 — 예시 CE 회로(V_CC=5V, R_C=800Ω)의 참고선
+
+    # ── 동작점(Q점): 부하선 기반 로직 (첫 코드 그대로) ──────────
+    R_B_eff = 30000.0
+    q_ib_A  = max(0.0, V_be / R_B_eff) if be_fwd else 0.0
+    if mode_en == "Forward Active":
+        I_C_ideal = beta * q_ib_A
+        I_C_max   = (V_CC - 0.2) / R_C
+        q_ic_A    = max(0.0, min(I_C_ideal, I_C_max))
+        q_vce     = max(0.2, V_CC - q_ic_A * R_C)
+    elif mode_en == "Saturation":
+        q_vce = 0.2; q_ic_A = (V_CC - q_vce) / R_C
+    else:
+        q_vce = V_CC; q_ic_A = 0.0
+    q_ic_mA = q_ic_A * 1000
+
+    # 직류 부하선 (Q점이 이 선 위에 놓임)
     fig_iv.add_trace(go.Scatter(
         x=[0.0, sign*V_CC], y=[sign*sat_ic_mag, 0.0],
-        mode='lines', line=dict(color='#0f172a', width=2.5, dash='dash'),
-        name='직류 부하선 (참고)'))
+        mode='lines', line=dict(color='#0f172a', width=3), name='직류 부하선'))
     fig_iv.add_vline(x=sign*0.2, line=dict(color='#ef4444',width=1.5,dash='dash'))
 
-    # 동작점 (V_CE = V_BE − V_BC, I_C). 역방향 활성은 전류 방향이 반대 → 부호 반전
-    ic_signed = ic_mA if mode_en in ("Forward Active", "Saturation") else (-ic_mA if mode_en == "Reverse Active" else 0.0)
-    op_x = sign * vce_signed
-    op_y = sign * ic_signed
+    # Q점 (부하선 위, 항상 1사분면)
+    q_x, q_y = sign*q_vce, sign*q_ic_mA
     fig_iv.add_trace(go.Scatter(
-        x=[op_x], y=[op_y], mode='markers+text',
+        x=[q_x], y=[q_y], mode='markers+text',
         marker=dict(color='#ef4444',size=11,symbol='circle',line=dict(color='white',width=2)),
-        text=[f" 동작점 ({op_x:.2f}V, {op_y:.2f}mA)"],
-        textposition="top center",
-        textfont=dict(size=10,color='#dc2626'), name="동작점"))
-
-    # 축 범위: 기본 + 동작점이 항상 보이도록 확장
-    if bjt_type == "NPN":
-        x_range = [min(-0.5, op_x-0.6), max(V_CC+1.2, op_x+0.6)]
-        y_range = [min(-0.8, op_y-0.6), max(sat_ic_mag+1.5, op_y+0.6)]
-    else:
-        x_range = [min(-(V_CC+1.2), op_x-0.6), max(0.5, op_x+0.6)]
-        y_range = [min(-(sat_ic_mag+1.5), op_y-0.6), max(0.8, op_y+0.6)]
+        text=[f"Q ({sign*q_vce:.2f}V, {sign*q_ic_mA:.2f}mA)"],
+        textposition="top left" if bjt_type=="NPN" else "bottom right",
+        textfont=dict(size=10,color='#dc2626'), name="Q점"))
 
     fig_iv.update_layout(
         title=dict(text="I-V Characteristic Curve", font=dict(size=12, color="#64748b"), x=0.5, y=0.95, xanchor="center"),
         xaxis_title="V_CE [V]", yaxis_title="I_C [mA]",
-        xaxis=dict(range=x_range, showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
-        yaxis=dict(range=y_range, showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
+        xaxis=dict(range=[-0.2, V_CC+1.2] if bjt_type=="NPN" else [-(V_CC+1.2), 0.2], showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
+        yaxis=dict(range=[-0.5, sat_ic_mag+1.5] if bjt_type=="NPN" else [-(sat_ic_mag+1.5), 0.5], showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
         height=320, margin=dict(l=10,r=10,t=40,b=10), showlegend=True,
         legend=dict(x=0.75 if bjt_type=="NPN" else 0.02, y=0.98 if bjt_type=="NPN" else 0.15,
                     bgcolor='rgba(255,255,255,0.9)', bordercolor='#cbd5e1', borderwidth=1, font=dict(size=9)),
