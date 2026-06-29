@@ -67,8 +67,6 @@ st.markdown("""
     }
     [data-testid="stSidebar"] .stTextArea textarea {
         font-size: 0.78rem !important;
-        padding: 5px !important;
-        color: #2c3e50 !important;
     }
 
     /* 메인 영역 카드 스타일 */
@@ -468,6 +466,11 @@ with col2:
             name=f"I_B={ib_uA_c}μA", showlegend=True))
 
     sat_ic_mag = (V_CC/R_C)*1000
+    # 직류 부하선 — 예시 CE 회로(V_CC=5V, R_C=800Ω)의 참고선
+    fig_iv.add_trace(go.Scatter(
+        x=[0.0, sign*V_CC], y=[sign*sat_ic_mag, 0.0],
+        mode='lines', line=dict(color='#0f172a', width=2.5, dash='dash'),
+        name='직류 부하선 (참고)'))
     fig_iv.add_vline(x=sign*0.2, line=dict(color='#ef4444',width=1.5,dash='dash'))
 
     # 동작점 (V_CE = V_BE − V_BC, I_C). 역방향 활성은 전류 방향이 반대 → 부호 반전
