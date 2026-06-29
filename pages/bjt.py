@@ -341,13 +341,12 @@ with col1:
       <canvas id="bjtCanvas" width="400" height="130"
               style="background:#ffffff; border-radius:8px; display:block;
                      box-shadow:0 2px 8px rgba(0,0,0,0.06); width:100%;"></canvas>
-      <p style="color:#64748b; font-size:0.8rem; margin:0; font-family:sans-serif; text-align:center; font-weight:bold;">
-          <span style="color:#06b6d4;">● 전자 (Electron)</span>
-          &nbsp;&nbsp;
-          <span style="color:#f97316;">● 정공 (Hole)</span>
-          &nbsp;&nbsp;
-          <span style="color:#eab308;">✦ 재결합 (Recombination)</span>
-      </p>
+        <div style="display:flex; flex-wrap:wrap; justify-content:center; align-items:center;
+                  gap:4px 14px; margin:0; font-family:sans-serif; font-size:0.8rem; font-weight:bold;">
+          <span style="white-space:nowrap; color:#06b6d4;">● 전자 (Electron)</span>
+          <span style="white-space:nowrap; color:#f97316;">● 정공 (Hole)</span>
+          <span style="white-space:nowrap; color:#eab308;">✦ 재결합 (Recombination)</span>
+      </div>
     </div>
 
     <script>
