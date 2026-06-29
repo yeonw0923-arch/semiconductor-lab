@@ -108,7 +108,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#1e293b;'>접합 전압 인가</span>", unsafe_allow_html=True)
 
-    label_be = "베이스-에미터 전압 V_BE (V)" if bjt_type == "NPN" else "에미터-베이스 전압 V_EB (V)"
+    label_be = "베이스-이미터 전압 V_BE (V)" if bjt_type == "NPN" else "이미터-베이스 전압 V_EB (V)"
     st.markdown(f"<span style='font-size:0.75rem;font-weight:700;color:#2c3e50;'>{label_be}</span>", unsafe_allow_html=True)
     st.sidebar.write("")
     V_be = st.slider(label_be, min_value=-5.0, max_value=5.0, step=0.05,
