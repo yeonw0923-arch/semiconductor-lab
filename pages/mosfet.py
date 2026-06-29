@@ -15,54 +15,48 @@ st.set_page_config(
     layout="wide"
 )
 
-# ── CSS 스타일 ─────────────────────────────────────────────
+# ── CSS 스타일 (BJT와 통일) ─────────────────────────────────
 st.markdown("""
 <style>
-    [data-testid="stSidebarUserContent"] {
-        padding-top: 0rem !important;
-    }
+    /* 사이드바 (MOSFET 기존 유지) */
+    [data-testid="stSidebarUserContent"] { padding-top: 0rem !important; }
     [data-testid="stSidebarNav"] { display: none !important; }
-
     [data-testid="stSidebar"] .element-container,
     [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] p {
-        margin-bottom: 0px !important;
-        margin-top: 0px !important;
+        margin-bottom: 0px !important; margin-top: 0px !important;
     }
     [data-testid="stSidebar"] h3 {
-        font-size: 0.95rem !important;
-        margin-bottom: 5px !important;
-        margin-top: 5px !important;
+        font-size: 0.95rem !important; margin-bottom: 5px !important; margin-top: 5px !important;
     }
     [data-testid="stSidebar"] hr { margin: 6px 0 !important; }
     [data-testid="stSidebar"] .stSlider {
-        margin-top: 0px !important;
-        padding-bottom: 0px !important;
-        margin-bottom: -10px !important;
+        margin-top: 0px !important; padding-bottom: 0px !important; margin-bottom: -10px !important;
     }
-    [data-testid="stSidebar"] [data-testid="stSliderThumbValue"] {
-        top: -30px !important;
-    }
-    [data-testid="stSidebar"] [data-testid="stSliderTickBar"] {
-        margin-top: -20px !important;
-    }
-    [data-testid="stSidebar"] .stSelectbox {
-        margin-top: -4px !important;
-        margin-bottom: -4px !important;
-    }
-    [data-testid="stSidebar"] .stTextArea {
-        margin-top: 4px !important;
-        margin-bottom: -4px !important;
-    }
-    [data-testid="stSidebar"] .stTextArea textarea {
-        font-size: 13px !important;
-    }
+    [data-testid="stSidebar"] [data-testid="stSliderThumbValue"] { top: -30px !important; }
+    [data-testid="stSidebar"] [data-testid="stSliderTickBar"] { margin-top: -20px !important; }
+    [data-testid="stSidebar"] .stSelectbox { margin-top: -4px !important; margin-bottom: -4px !important; }
+    [data-testid="stSidebar"] .stTextArea { margin-top: 4px !important; margin-bottom: -4px !important; }
+    [data-testid="stSidebar"] .stTextArea textarea { font-size: 13px !important; }
     [data-testid="stSidebar"] div.stButton > button {
-        border-radius: 8px !important;
-        font-size: 13px !important;
-        padding: 4px 12px !important;
-        min-height: 32px !important;
-        transition: background-color 0.2s ease;
+        border-radius: 8px !important; font-size: 13px !important; padding: 4px 12px !important;
+        min-height: 32px !important; transition: background-color 0.2s ease;
     }
+
+    /* 메인 영역 카드 스타일 (BJT와 동일) */
+    .stat-card {
+        background: #ffffff; border-radius: 12px; padding: 16px;
+        border: 1px solid #eaeaea; box-shadow: 0px 4px 10px rgba(0,0,0,0.02); height: 100%;
+    }
+    .stat-title { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-label { font-size: 0.7rem; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
+    .stat-value { font-size: 1.15rem; font-weight: 700; color: #1e293b; }
+    .section-header {
+        font-size: 1.25rem; font-weight: 800; color: #334155;
+        margin-top: 0px; margin-bottom: 12px;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .block-container { padding-top: 2.5rem !important; padding-bottom: 1rem !important; }
+    .stPlotlyChart { margin-bottom: 15px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -131,7 +125,7 @@ with st.sidebar:
         label_visibility="collapsed"
     )
     ask_btn = st.button("🤖 AI 실시간 해설 보기", use_container_width=True, type="primary")
-    
+
 # ── MOSFET 물리 계산 ─────────────────────────────────────────
 def calc_mosfet(device, vgs, vds, vth, Kn=1.0, Kp=1.0):
     if device == "NMOS":
@@ -149,7 +143,7 @@ def calc_mosfet(device, vgs, vds, vth, Kn=1.0, Kp=1.0):
         vgs_real = -vgs; vds_real = -vds; vth_real = -vth
         vgs_eff  = vth_real - vgs_real
         vds_sat  = max(vgs_eff, 0.0)
-        if vgs_real > vth_real:
+        if vgs_real >= vth_real:
             region = "Cutoff";  id_mA = 0.0
         elif abs(vds_real) < vgs_eff:
             region = "Linear"
@@ -162,51 +156,74 @@ def calc_mosfet(device, vgs, vds, vth, Kn=1.0, Kp=1.0):
 region, id_mA, vds_sat = calc_mosfet(device, vgs, vds, vth)
 
 region_kr = {
-    "Cutoff":     "차단 영역 (Cutoff)",
-    "Linear":     "선형 영역 (Linear)",
-    "Saturation": "포화 영역 (Saturation)"
+    "Cutoff":     "차단 영역",
+    "Linear":     "선형 영역",
+    "Saturation": "포화 영역"
 }.get(region, region)
 
-# ── 타이틀 ───────────────────────────────────────────────────
-st.markdown(f"# 🔌 {device} MOSFET SIMULATOR")
-st.divider()
+region_color = (
+    "#22c55e" if region == "Saturation" else
+    "#f59e0b" if region == "Linear" else
+    "#ef4444"
+)
 
-col_left, col_mid, col_right = st.columns([1, 1.4, 1])
+region_desc = {
+    "Cutoff":     "V_GS < V_TH → 반전 채널 미형성 → 전류 차단 (OFF 스위치)",
+    "Linear":     "V_DS < V_GS − V_TH → 채널이 저항처럼 동작 (트라이오드)",
+    "Saturation": "V_DS ≥ V_GS − V_TH → 드레인 핀치오프 → 정전류원처럼 동작",
+}.get(region, "")
+
+# ── 타이틀 (BJT와 동일한 헤더 스타일) ────────────────────────
+st.markdown(f"""
+<h1 style='text-align:left; font-size:2.2rem; font-weight:900; color:#1e293b;
+           margin-top:0; padding-bottom:12px; border-bottom:1px solid #e2e8f0; margin-bottom:24px;'>
+    🔌 {device} MOSFET SIMULATOR
+</h1>
+""", unsafe_allow_html=True)
+
+# 3단 컬럼 비율 (BJT와 동일)
+col_left, col_mid, col_right = st.columns([0.28, 0.46, 0.26], gap="medium")
 
 # ════════════════════════════════════════════════════════════
-# 1열: 소자 상태 + 구조 시각화
+# 1열: 소자 상태(카드) + 구조 시각화
 # ════════════════════════════════════════════════════════════
 with col_left:
-    st.markdown("### 📊 소자 상태")
-    region_color = (
-        "#28a745" if region == "Saturation" else
-        "#ffc107" if region == "Linear" else
-        "#dc3545"
-    )
+    st.markdown("<div class='section-header'>📊 소자 상태</div>", unsafe_allow_html=True)
     st.markdown(f"""
-    <div style='margin-bottom:8px'>
-        <div style='font-size:13px;color:#666;margin-bottom:4px'>Operating Region</div>
-        <div style='font-size:26px;font-weight:700;color:{region_color}'>{region_kr}</div>
+    <div class='stat-card' style='margin-bottom: 24px;'>
+        <div class='stat-title'>Operating Region</div>
+        <div style='font-size:1.6rem; font-weight:800; color:{region_color}; line-height:1.2; margin-bottom:4px;'>
+            {region_kr}
+        </div>
+        <div style='font-size:0.9rem; color:{region_color}; margin-bottom:18px; font-weight:600;'>({region})</div>
+        <div style='display:grid; grid-template-columns:1fr 1fr; gap:16px;'>
+            <div>
+                <div class='stat-label'>인가전압 |V_DS|</div>
+                <div class='stat-value'>{vds:.2f} V</div>
+            </div>
+            <div>
+                <div class='stat-label'>드레인전류 |I_D|</div>
+                <div class='stat-value'>{id_mA:.2f} mA</div>
+            </div>
+            <div>
+                <div class='stat-label'>게이트전압 |V_GS|</div>
+                <div class='stat-value'>{vgs:.2f} V</div>
+            </div>
+            <div>
+                <div class='stat-label'>포화전압 V_DSAT</div>
+                <div class='stat-value'>{vds_sat:.2f} V</div>
+            </div>
+        </div>
+        <div style='margin-top:20px; padding:12px 14px; background:#f8fafc;
+                    border-left:4px solid {region_color}; border-radius:6px;
+                    font-size:0.78rem; font-weight:700; color:#334155; line-height:1.45;'>
+            <span style='color:{region_color}'>{region_desc}</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown(f"""
-        <div style='padding:8px 0'>
-            <div style='font-size:11px;color:#666;margin-bottom:2px'>인가전압 |V_DS|</div>
-            <div style='font-size:28px;font-weight:700;color:#1a1a2e'>{vds:.2f} V</div>
-        </div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown(f"""
-        <div style='padding:8px 0'>
-            <div style='font-size:11px;color:#666;margin-bottom:2px'>드레인전류 |I_D|</div>
-            <div style='font-size:28px;font-weight:700;color:#1a1a2e'>{id_mA:.2f} mA</div>
-        </div>""", unsafe_allow_html=True)
-    st.container().markdown("")
-
     # ── MOSFET 구조 시각화 ───────────────────────────────
-    st.markdown("### 📐 MOSFET 구조")
+    st.markdown("<div class='section-header'>📐 MOSFET 구조</div>", unsafe_allow_html=True)
     fig_struct, ax = plt.subplots(figsize=(5, 4.5))
     ax.set_xlim(0, 10); ax.set_ylim(0, 8.5); ax.axis("off")
     fig_struct.patch.set_facecolor('white')
@@ -303,10 +320,10 @@ with col_left:
 
 
 # ════════════════════════════════════════════════════════════
-# 2열: I-V 곡선(plotly) + 에너지밴드(matplotlib)
+# 2열: I-V 곡선(plotly) + 에너지밴드(plotly)
 # ════════════════════════════════════════════════════════════
 with col_mid:
-    st.markdown("### 📈 전류-전압 특성 곡선 & 에너지 밴드 다이어그램")
+    st.markdown("<div class='section-header'>📈 특성 곡선 & 밴드 다이어그램</div>", unsafe_allow_html=True)
 
     # ── I-V 특성 곡선 (plotly) ───────────────────────────
     v_ax = np.linspace(0, 5, 300)
@@ -338,7 +355,7 @@ with col_mid:
         name="Operating Point"
     ))
     fig_iv.update_layout(
-        height=300, margin=dict(l=0, r=0, t=30, b=0),
+        height=320, margin=dict(l=10, r=10, t=40, b=10),
         xaxis_title="|V_DS| (V)" if device == "PMOS" else "V_DS (V)",
         yaxis_title="I_D (mA)",
         xaxis=dict(range=[0, 5]), yaxis=dict(rangemode='tozero'),
@@ -346,14 +363,13 @@ with col_mid:
                     bgcolor="rgba(255,255,255,0.85)",
                     bordercolor="rgba(128,128,128,0.3)", borderwidth=1,
                     font=dict(size=9)),
-        plot_bgcolor='rgba(0,0,0,0)',
-        title=dict(text="I-V Characteristic Curve", font=dict(size=11),
-                   x=0.5, xanchor='center')
+        plot_bgcolor='white',
+        title=dict(text="I-V Characteristic Curve", font=dict(size=12, color="#64748b"),
+                   x=0.5, y=0.95, xanchor='center')
     )
-    fig_iv.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-    fig_iv.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+    fig_iv.update_xaxes(showgrid=True, gridcolor='#f1f5f9')
+    fig_iv.update_yaxes(showgrid=True, gridcolor='#f1f5f9')
     st.plotly_chart(fig_iv, use_container_width=True, theme="streamlit")
-    st.container().markdown("")
 
     # ── 에너지 밴드 다이어그램 (plotly, Source-Channel-Drain 3구간) ──
     Eg   = 1.12
@@ -407,37 +423,31 @@ with col_mid:
 
     fig_band.add_trace(go.Scatter(
         x=list(x_all), y=list(ec_all), mode='lines',
-        line=dict(color='#e74c3c', width=2.5),
-        name="E<sub>c</sub>"
+        line=dict(color='#e74c3c', width=2.5), name="E<sub>c</sub>"
     ))
     fig_band.add_trace(go.Scatter(
         x=list(x_all), y=list(ev_all), mode='lines',
-        line=dict(color='#2980b9', width=2.5),
-        name="E<sub>v</sub>"
+        line=dict(color='#2980b9', width=2.5), name="E<sub>v</sub>"
     ))
     fig_band.add_trace(go.Scatter(
         x=[0.0, 1.0], y=[ef_src_val, ef_src_val], mode='lines',
-        line=dict(color='purple', width=1.5, dash='dot'),
-        name="E<sub>f</sub>"
+        line=dict(color='purple', width=1.5, dash='dot'), name="E<sub>f</sub>"
     ))
     fig_band.add_trace(go.Scatter(
         x=[2.0, 3.0], y=[ef_drn_val, ef_drn_val], mode='lines',
-        line=dict(color='purple', width=1.5, dash='dot'),
-        showlegend=False
+        line=dict(color='purple', width=1.5, dash='dot'), showlegend=False
     ))
 
     # Eg 양방향 화살표
     fig_band.add_annotation(
         x=0.15, y=ec_src[0], ay=ev_src[0],
         axref='x', ayref='y', xref='x', yref='y',
-        arrowhead=2, arrowsize=1, arrowwidth=1.2,
-        arrowcolor='gray', ax=0.15
+        arrowhead=2, arrowsize=1, arrowwidth=1.2, arrowcolor='gray', ax=0.15
     )
     fig_band.add_annotation(
         x=0.15, y=ev_src[0], ay=ec_src[0],
         axref='x', ayref='y', xref='x', yref='y',
-        arrowhead=2, arrowsize=1, arrowwidth=1.2,
-        arrowcolor='gray', ax=0.15
+        arrowhead=2, arrowsize=1, arrowwidth=1.2, arrowcolor='gray', ax=0.15
     )
     fig_band.add_annotation(
         x=0.2, y=(ec_src[0] + ev_src[0]) / 2,
@@ -449,15 +459,13 @@ with col_mid:
     label_y = ch_mid_ec
     if region == "Saturation" and vgs_eff_plot > 0:
         fig_band.add_annotation(
-            x=1.5, y=label_y,
-            text="Inversion Layer<br>(Saturation)",
+            x=1.5, y=label_y, text="Inversion Layer<br>(Saturation)",
             showarrow=False, font=dict(size=9, color='#27ae60'),
             bgcolor='#eafaf1', bordercolor='#27ae60', borderwidth=1
         )
     elif region == "Linear" and vgs_eff_plot > 0:
         fig_band.add_annotation(
-            x=1.5, y=label_y,
-            text="Channel Formed<br>(Linear)",
+            x=1.5, y=label_y, text="Channel Formed<br>(Linear)",
             showarrow=False, font=dict(size=9, color='#f39c12'),
             bgcolor='#fef9e7', bordercolor='#f39c12', borderwidth=1
         )
@@ -474,36 +482,32 @@ with col_mid:
         )
 
     fig_band.update_layout(
-        height=270, margin=dict(l=0, r=0, t=30, b=0),
+        height=320, margin=dict(l=10, r=10, t=40, b=10),
         xaxis=dict(
             tickvals=[0.5, 1.5, 2.5],
             ticktext=["Source", "Channel", "Drain"],
-            tickfont=dict(size=10),
-            showgrid=True, gridcolor='rgba(128,128,128,0.2)'
+            tickfont=dict(size=10), showgrid=True, gridcolor='#f1f5f9'
         ),
-        yaxis=dict(
-            title="Energy (eV)", title_font=dict(size=10),
-            showgrid=True, gridcolor='rgba(128,128,128,0.2)'
-        ),
+        yaxis=dict(title="Energy (eV)", title_font=dict(size=10),
+                   showgrid=True, gridcolor='#f1f5f9'),
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99,
                     bgcolor="rgba(255,255,255,0.85)",
                     bordercolor="rgba(128,128,128,0.3)", borderwidth=1,
                     font=dict(size=9)),
-        plot_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='white',
         title=dict(text=f"Energy Band Diagram ({device})",
-                   font=dict(size=11), x=0.5, xanchor='center')
+                   font=dict(size=12, color="#64748b"), x=0.5, y=0.95, xanchor='center')
     )
     st.plotly_chart(fig_band, use_container_width=True, theme="streamlit")
 
 
-# ── 3열: AI 해설 ─────────────────────────────────────────────
+# ════════════════════════════════════════════════════════════
+# 3열: AI 해설 (BJT와 동일한 박스 스타일)
+# ════════════════════════════════════════════════════════════
 with col_right:
-    st.markdown("### 🤖 AI 해설")
+    st.markdown("<div class='section-header'>🤖 AI 해설</div>", unsafe_allow_html=True)
     if "gemini_response" not in st.session_state:
         st.session_state.gemini_response = ""
-
-    if not st.session_state.gemini_response:
-        st.info("👉 왼쪽 패널에서 설정을 마치고 [AI 실시간 해설 보기] 버튼을 눌러보세요.")
 
     if ask_btn:
         question = (user_question.strip() if user_question.strip()
@@ -524,5 +528,18 @@ with col_right:
             st.session_state.gemini_response = call_gemini(full_prompt)
 
     if st.session_state.gemini_response:
-        st.markdown("---")
-        st.success(st.session_state.gemini_response)
+        st.markdown(f"""
+        <div style='background:#ffffff; padding:16px; border-radius:10px;
+                    border:1px solid #e2e8f0; font-size:0.85rem; color:#1e293b;
+                    line-height:1.6; white-space:pre-wrap; min-height:140px;
+                    box-shadow:0px 4px 6px rgba(0,0,0,0.02);'>{st.session_state.gemini_response}</div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style='background:#f0f9ff; padding:16px; border-radius:10px;
+                    border:1px solid #bae6fd; font-size:0.88rem; font-weight:600;
+                    color:#0369a1; display:flex; align-items:flex-start; gap:8px;'>
+            <span>👉</span>
+            <span>왼쪽 패널에서 설정을 마치고 [AI 실시간 해설 보기] 버튼을 눌러보세요.</span>
+        </div>
+        """, unsafe_allow_html=True)
