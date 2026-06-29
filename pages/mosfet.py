@@ -36,7 +36,7 @@ st.markdown("""
     [data-testid="stSidebar"] [data-testid="stSliderTickBar"] { margin-top: -20px !important; }
     [data-testid="stSidebar"] .stSelectbox { margin-top: -4px !important; margin-bottom: -4px !important; }
     [data-testid="stSidebar"] .stTextArea { margin-top: 4px !important; margin-bottom: -4px !important; }
-    [data-testid="stSidebar"] .stTextArea textarea { font-size: 13px !important; }
+    [data-testid="stSidebar"] .stTextArea textarea { font-size: 0.78rem !important; }
     [data-testid="stSidebar"] div.stButton > button {
         border-radius: 8px !important; font-size: 13px !important; padding: 4px 12px !important;
         min-height: 32px !important; transition: background-color 0.2s ease;
@@ -93,7 +93,7 @@ with st.sidebar:
     device = st.selectbox("소자 타입 선택", ["NMOS", "PMOS"])
     st.sidebar.divider()
 
-    st.markdown("**문턱 전압 |V_TH| (V)**")
+    st.markdown("<span style='font-size:0.75rem;font-weight:700;color:#2c3e50;'>문턱 전압 |V_TH| (V)</span>", unsafe_allow_html=True)
     st.sidebar.write("")
     vth = st.slider("V_TH", 0.0, 2.0,
                     value=float(st.session_state["vth_val"]),
@@ -101,7 +101,7 @@ with st.sidebar:
                     label_visibility="collapsed")
     st.session_state["vth_val"] = vth
 
-    st.markdown("**게이트 전압 V_GS (V)**")
+    st.markdown("<span style='font-size:0.75rem;font-weight:700;color:#2c3e50;'>게이트 전압 V_GS (V)</span>", unsafe_allow_html=True)
     st.sidebar.write("")
     vgs = st.slider("V_GS", 0.0, 5.0,
                     value=float(st.session_state["vgs_val"]),
@@ -109,7 +109,7 @@ with st.sidebar:
                     label_visibility="collapsed")
     st.session_state["vgs_val"] = vgs
 
-    st.markdown("**드레인 전압 V_DS (V)**")
+    st.markdown("<span style='font-size:0.75rem;font-weight:700;color:#2c3e50;'>드레인 전압 V_DS (V)</span>", unsafe_allow_html=True)
     st.sidebar.write("")
     vds = st.slider("V_DS", 0.0, 5.0,
                     value=float(st.session_state["vds_val"]),
@@ -118,7 +118,7 @@ with st.sidebar:
     st.session_state["vds_val"] = vds
     st.sidebar.divider()
 
-    st.markdown("**🤖 ASK AI**")
+    st.markdown("<span style='font-size:0.8rem;font-weight:700;color:#1e293b;'>🤖 ASK AI</span>", unsafe_allow_html=True)
     user_question = st.text_area(
         "", height=80,
         placeholder="e.g. 현재 전압 조건 상태에 대해 물리적으로 쉽게 설명해줘.",
