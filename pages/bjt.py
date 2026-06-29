@@ -341,10 +341,12 @@ with col1:
       <canvas id="bjtCanvas" width="400" height="130"
               style="background:#ffffff; border-radius:8px; display:block;
                      box-shadow:0 2px 8px rgba(0,0,0,0.06); width:100%;"></canvas>
-      <p style="color:#64748b; font-size:0.85rem; margin:0; font-family:sans-serif; text-align:center; font-weight:bold;">
+      <p style="color:#64748b; font-size:0.8rem; margin:0; font-family:sans-serif; text-align:center; font-weight:bold;">
           <span style="color:#06b6d4;">● 전자 (Electron)</span>
-          &nbsp;&nbsp;&nbsp;
+          &nbsp;&nbsp;
           <span style="color:#f97316;">● 정공 (Hole)</span>
+          &nbsp;&nbsp;
+          <span style="color:#eab308;">✦ 재결합 (Recombination)</span>
       </p>
     </div>
 
@@ -365,6 +367,15 @@ with col1:
         for (let i = 0; i < N_h; i++) {{
             particles.push({{ x: Math.random()*W, y: 30+Math.random()*70, r:3.5, type:'hole', dir:Math.random()<0.5?1:-1 }});
         }}
+
+        // ── 재결합 설정 ──────────────────────────────────────
+        //  • 통과 캐리어: NPN=전자, PNP=정공 (재결합 시 에미터에서 재주입)
+        //  • 재결합 빈도: 순방향 활성=드묾(β 높음), 포화=잦음(β 급락), 역방향=중간, 차단=0
+        const THROUGH = (BJT_TYPE==='NPN') ? 'electron' : 'hole';
+        const RECOMB_PROB = (MODE==='forward_active') ? 0.008 :
+                            (MODE==='saturation')     ? 0.07  :
+                            (MODE==='reverse_active') ? 0.03  : 0.0;
+        let flashes = [];
 
         function draw() {{
             ctx.clearRect(0, 0, W, H);
@@ -435,6 +446,47 @@ with col1:
                 if (p.y<30)  p.y=H-10;
                 if (p.y>H-5) p.y=30;
             }});
+
+            // ── 재결합: 베이스(130~290)에서 전자-정공이 가까우면 모드별 확률로 소멸 ──
+            let rc = 0;
+            if (RECOMB_PROB > 0) {{
+                for (let i=0; i<particles.length && rc<2; i++) {{
+                    const e = particles[i];
+                    if (e.type!=='electron' || e.x<130 || e.x>290) continue;
+                    for (let j=0; j<particles.length; j++) {{
+                        const h = particles[j];
+                        if (h.type!=='hole' || h.x<130 || h.x>290) continue;
+                        const dx=e.x-h.x, dy=e.y-h.y;
+                        if (dx*dx+dy*dy < 169 && Math.random() < RECOMB_PROB) {{
+                            flashes.push({{ x:(e.x+h.x)/2, y:(e.y+h.y)/2, age:0 }});
+                            // 통과 캐리어는 에미터(좌)에서 재주입, 상대는 베이스에서 보충
+                            if (THROUGH==='electron') {{
+                                e.x=5;   e.y=30+Math.random()*70;
+                                h.x=130+Math.random()*160; h.y=30+Math.random()*70;
+                            }} else {{
+                                h.x=5;   h.y=30+Math.random()*70;
+                                e.x=130+Math.random()*160; e.y=30+Math.random()*70;
+                            }}
+                            rc++; break;
+                        }}
+                    }}
+                }}
+            }}
+
+            // ── 섬광(재결합) 그리기 ──────────────────────────
+            for (let k=flashes.length-1; k>=0; k--) {{
+                const f = flashes[k];
+                const t = f.age / 14;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, 1 - t);
+                ctx.shadowBlur = 12; ctx.shadowColor = '#facc15';
+                ctx.fillStyle = '#fde047';
+                ctx.beginPath(); ctx.arc(f.x, f.y, 3 + t*9, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+                f.age++;
+                if (f.age > 14) flashes.splice(k, 1);
+            }}
+
             requestAnimationFrame(draw);
         }}
         draw();
