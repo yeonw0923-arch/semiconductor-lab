@@ -128,9 +128,8 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("<span style='font-size:0.8rem;font-weight:700;color:#1e293b;'>🤖 ASK AI</span>", unsafe_allow_html=True)
-    user_question = st.text_area("질문 입력", height=60, label_visibility="collapsed",
-                                 value="현재 바이어스 상태가 증폭기로서 왜 적합한지 밴드 다이어그램 관점에서 설명해줘.",
-                                 placeholder="e.g. 현재 전압 조건 상태에 대해 물리적으로 쉽게 설명해줘.")
+    user_question = st.text_area("질문 입력", height=80, label_visibility="collapsed",
+                                 placeholder="e.g. 현재 바이어스 상태가 증폭기로서 왜 적합한지 밴드 다이어그램 관점에서 설명해줘.")
     ai_btn = st.button("🤖 AI 실시간 해설 보기", use_container_width=True, type="primary")
 
 # ── 물리 상수 ────────────────────────────────────────────────
@@ -491,11 +490,11 @@ with col2:
         y_range = [min(-(sat_ic_mag+1.5), op_y-0.6), max(0.8, op_y+0.6)]
 
     fig_iv.update_layout(
-        title=dict(text="<b>I-V Characteristic Curve</b>", font=dict(size=13, color="black"), x=0.5, xanchor="center"),
+        title=dict(text="I-V Characteristic Curve", font=dict(size=12, color="#64748b"), x=0.5, y=0.95, xanchor="center"),
         xaxis_title="V_CE [V]", yaxis_title="I_C [mA]",
         xaxis=dict(range=x_range, showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
         yaxis=dict(range=y_range, showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
-        height=320, margin=dict(l=10,r=10,t=50,b=10), showlegend=True,
+        height=320, margin=dict(l=10,r=10,t=40,b=10), showlegend=True,
         legend=dict(x=0.75 if bjt_type=="NPN" else 0.02, y=0.98 if bjt_type=="NPN" else 0.15,
                     bgcolor='rgba(255,255,255,0.9)', bordercolor='#cbd5e1', borderwidth=1, font=dict(size=9)),
         plot_bgcolor='white'
@@ -571,10 +570,10 @@ with col2:
     fig_band.add_vline(x=5.2, line=dict(color='#94a3b8',width=1.5,dash='dot'))
 
     fig_band.update_layout(
-        title=dict(text=f"<b>Energy Band Diagram ({bjt_type})</b>", font=dict(size=13, color="black"), x=0.5, xanchor="center"),
+        title=dict(text=f"Energy Band Diagram ({bjt_type})", font=dict(size=12, color="#64748b"), x=0.5, y=0.95, xanchor="center"),
         xaxis=dict(visible=False, range=[-0.2,8.6]),
         yaxis=dict(visible=False, range=[min(ev_all)-0.35, max(ec_all)+0.8]),
-        height=320, margin=dict(l=10,r=10,t=50,b=10), showlegend=False, plot_bgcolor='white'
+        height=320, margin=dict(l=10,r=10,t=40,b=10), showlegend=False, plot_bgcolor='white'
     )
     st.plotly_chart(fig_band, use_container_width=True)
 
@@ -582,13 +581,15 @@ with col2:
 with col3:
     st.markdown("<div class='section-header'>🤖 AI 해설</div>", unsafe_allow_html=True)
     if ai_btn:
+        question = (user_question.strip() if user_question.strip()
+                    else "현재 바이어스 상태가 증폭기로서 왜 적합한지 밴드 다이어그램 관점에서 설명해줘.")
         system_instruction = f"""
 당신은 반도체 소자 물리학 및 증폭 회로 설계 전문가입니다.
 인삿말 없이 바로 수치 분석부터 시작하세요.
 현재 설정: BJT={bjt_type}, V_BE={V_be:.2f}V, V_BC={V_bc:.2f}V
 모드={mode_full}, I_B={ib_uA:.2f}μA, I_C={ic_mA:.2f}mA, V_CE={vce_signed:.2f}V, 전류이득 β≈{beta_str}
 6주차 에너지 밴드 교안과 7주차 바이어스 교안을 연결하여 한국어 마크다운으로 답변하세요.
-질문: "{user_question}"
+질문: "{question}"
 """
         if "GEMINI_API_KEY" in st.secrets:
             with st.spinner("AI가 분석 중입니다..."):
@@ -599,13 +600,19 @@ with col3:
                     st.markdown(f"""
                     <div style='background:#ffffff; padding:16px; border-radius:10px;
                                 border:1px solid #e2e8f0; font-size:0.85rem; color:#1e293b;
-                                height:640px; overflow-y:auto; line-height:1.6; box-shadow: 0px 4px 6px rgba(0,0,0,0.02);'>
-                        {resp.text}
-                    </div>
+                                line-height:1.6; white-space:pre-wrap; min-height:140px;
+                                box-shadow:0px 4px 6px rgba(0,0,0,0.02);'>{resp.text}</div>
                     """, unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"오류: {e}")
         else:
             st.error("GEMINI_API_KEY가 설정되지 않았습니다.")
     else:
-        st.info("👉 왼쪽 패널에서 설정을 마치고 [AI 실시간 해설 보기] 버튼을 눌러보세요.")
+        st.markdown("""
+        <div style='background:#f0f9ff; padding:16px; border-radius:10px;
+                    border:1px solid #bae6fd; font-size:0.88rem; font-weight:600;
+                    color:#0369a1; display:flex; align-items:flex-start; gap:8px;'>
+            <span>👉</span>
+            <span>왼쪽 패널에서 설정을 마치고 [AI 실시간 해설 보기] 버튼을 눌러보세요.</span>
+        </div>
+        """, unsafe_allow_html=True)
