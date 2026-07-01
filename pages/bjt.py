@@ -603,7 +603,7 @@ with col2:
     fig_band.add_trace(go.Scatter(x=[x_je, x_jc], y=[E_F_Base, E_F_Base], mode='lines', line=dict(color=color_ef,width=2,dash='dash'), name='E_F (Base)'))
     fig_band.add_trace(go.Scatter(x=[x_jc, 8.0], y=[E_F_Collector, E_F_Collector], mode='lines', line=dict(color=color_ef,width=2,dash='dash'), name='E_F (Collector)'))
 
-    # Eg 표시 화살표 및 텍스트 (에미터 영역 좌측)
+    # Eg 표시 화살표 및 텍스트 (이미터 영역 좌측)
     x_eg = 0.5
     fig_band.add_annotation(
         x=x_eg, y=E_C_Emitter, ax=x_eg, ay=E_C_Emitter - E_g,
