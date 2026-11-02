@@ -138,7 +138,8 @@ beta    = beta_F                     # 출력특성(I-V) 곡선용
 V_AF    = 100.0; early_k = 1.0 / V_AF  # Early 효과
 V_T     = 0.02585                    # 열전압 (≈300K)
 I_S     = 1e-15                      # 역포화 전류 (A)
-V_CLAMP = 0.75                       # 접합 클램핑(턴온 후 전압 포화) — exp 폭주 방지
+V_CLAMP    = 0.75                    # B-E 접합 클램핑
+V_CLAMP_BC = 0.55                    # 포화 시 B-C 접합 클램핑 → V_CE(sat) = 0.75 − 0.55 = 0.2V
 
 # ── 동작 영역 분류 (접합 바이어스 극성 기준) ─────────────────
 be_fwd  = V_be > 0
@@ -172,11 +173,13 @@ def ic_of(vce, ib_A):
     v = max(vce, 0.0)
     return max(0.0, ic_sat * np.tanh(v / 0.12) * (1.0 + early_k * v))
 
-vce_signed = V_be - V_bc                                  # V_CE(NPN)/V_EC(PNP) — 단일 일관 값
+v_be_j = min(V_be, V_CLAMP)                               # 실제 접합에 걸리는 전압
+v_bc_j = min(V_bc, V_CLAMP_BC) if (be_fwd and bc_fwd) else min(V_bc, V_CLAMP)
+vce_signed = v_be_j - v_bc_j                              # V_CE(NPN)/V_EC(PNP)
 
 if be_fwd:                                                # B-E 순방향 (순방향 활성 + 포화)
     ib_be_A = diode_I(V_be) / beta_F                      # B-E 접합 기반 베이스 전류
-    ib_bc_A = diode_I(V_bc) / beta_R if bc_fwd else 0.0   # 포화 시 B-C 접합 추가 베이스 전류
+    ib_bc_A = diode_I(v_bc_j) / beta_R if bc_fwd else 0.0   # V_bc → v_bc_j
     ic_mA   = ic_of(vce_signed, ib_be_A)                  # 동작점 I_C — 패밀리와 동일 함수 (포화 knee 자동 반영)
     ib_uA   = (ib_be_A + ib_bc_A) * 1e6
 elif bc_fwd:                                              # 역방향 활성 (낮은 β_R)
