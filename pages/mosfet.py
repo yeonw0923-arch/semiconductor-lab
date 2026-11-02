@@ -162,15 +162,12 @@ with col_left:
     SIO2_BOTTOM,CH_THICK=5.1,0.5
     if region=="Saturation":
         ratio=float(np.clip(vds_sat/max(abs(vds),0.01),0.15,0.85))
-        po_x=(GATE_X_START+GATE_LEN*ratio if device=="NMOS" else GATE_X_END-GATE_LEN*ratio)
-        if device=="NMOS":
-            tri_pts=np.array([[GATE_X_START,SIO2_BOTTOM],[po_x,SIO2_BOTTOM],[GATE_X_START,SIO2_BOTTOM-CH_THICK]])
-            dep_rect=patches.Rectangle((po_x,SIO2_BOTTOM-CH_THICK),GATE_X_END-po_x,CH_THICK,fc="#dce8f5",ec="#5a8abf",linestyle='--',alpha=0.6)
-            arr_start,arr_end=GATE_X_START+0.2,po_x-0.15
-        else:
-            tri_pts=np.array([[GATE_X_END,SIO2_BOTTOM],[po_x,SIO2_BOTTOM],[GATE_X_END,SIO2_BOTTOM-CH_THICK]])
-            dep_rect=patches.Rectangle((GATE_X_START,SIO2_BOTTOM-CH_THICK),po_x-GATE_X_START,CH_THICK,fc="#fbeee6",ec="#e67e22",linestyle='--',alpha=0.6)
-            arr_start,arr_end=GATE_X_END-0.2,po_x+0.15
+        po_x=GATE_X_START+GATE_LEN*ratio          # NMOS/PMOS 모두 소스(왼쪽) 기준
+        tri_pts=np.array([[GATE_X_START,SIO2_BOTTOM],[po_x,SIO2_BOTTOM],[GATE_X_START,SIO2_BOTTOM-CH_THICK]])
+        dep_fc,dep_ec=("#dce8f5","#5a8abf") if device=="NMOS" else ("#fbeee6","#e67e22")
+        dep_rect=patches.Rectangle((po_x,SIO2_BOTTOM-CH_THICK),GATE_X_END-po_x,CH_THICK,
+                                   fc=dep_fc,ec=dep_ec,linestyle='--',alpha=0.6)
+        arr_start,arr_end=GATE_X_START+0.2,po_x-0.15
         ax.add_patch(MplPolygon(tri_pts,closed=True,fc=ch_color,ec=ch_edge,lw=1.2,alpha=0.9,zorder=4))
         ax.add_patch(dep_rect)
         ax.plot(po_x,SIO2_BOTTOM,'ro',ms=7,zorder=10)
