@@ -495,59 +495,67 @@ with col1:
 with col2:
     st.markdown("<div class='section-header'>📈 특성 곡선 & 밴드 다이어그램</div>", unsafe_allow_html=True)
 
-    # ── I_C–V_CE 출력 특성 곡선
+        # ── I_C–V_CE 출력 특성 곡선
     fig_iv = go.Figure()
     sign       = 1 if bjt_type=="NPN" else -1
-    v_arr      = np.linspace(0, V_CC+0.8, 300)
+    x_max      = max(V_CC + 0.8, vce_signed + 0.8)      # Q점이 화면 밖으로 나가지 않게
+    x_min      = min(-0.2, vce_signed - 0.3)
+    v_arr      = np.linspace(0, x_max, 300)
     ib_list    = [10,20,30,40,50]
     base_color = (249, 115, 22) if bjt_type=="NPN" else (168, 85, 247)
 
+    y_max = 0.0
     for idx, ib_uA_c in enumerate(ib_list):
         ib_A_c = ib_uA_c*1e-6
         alpha  = 0.4 + 0.12*idx
         color  = f"rgba({base_color[0]},{base_color[1]},{base_color[2]},{alpha:.2f})"
         ic_curve = [ic_of(v, ib_A_c) for v in v_arr]
+        y_max = max(y_max, max(ic_curve))
         fig_iv.add_trace(go.Scatter(
             x=[sign*v for v in v_arr], y=[sign*ic for ic in ic_curve],
             mode='lines', line=dict(color=color,width=2.5),
             name=f"I_B={ib_uA_c}μA", showlegend=True))
 
-    sat_ic_mag = (V_CC/R_C)*1000
+    # ── 현재 I_B 곡선 (Q점이 정확히 이 곡선 위에 놓임)
+    ib_now_A = diode_I(V_be) / beta_F if be_fwd else 0.0
+    if ib_now_A > 0:
+        ic_now = [ic_of(v, ib_now_A) for v in v_arr]
+        y_max = max(y_max, max(ic_now))
+        fig_iv.add_trace(go.Scatter(
+            x=[sign*v for v in v_arr], y=[sign*ic for ic in ic_now],
+            mode='lines', line=dict(color='#0f172a', width=2.5, dash='dot'),
+            name=f"현재 I_B={ib_now_A*1e6:.1f}μA"))
 
-    # ── 동작점(Q점): 부하선 기반 로직
-    R_B_eff = 30000.0
-    q_ib_A  = max(0.0, V_be / R_B_eff) if be_fwd else 0.0
-    if mode_en == "Forward Active":
-        I_C_ideal = beta * q_ib_A
-        I_C_max   = (V_CC - 0.2) / R_C
-        q_ic_A    = max(0.0, min(I_C_ideal, I_C_max))
-        q_vce     = max(0.2, V_CC - q_ic_A * R_C)
-    elif mode_en == "Saturation":
-        q_vce = 0.2; q_ic_A = (V_CC - q_vce) / R_C
-    else:
-        q_vce = V_CC; q_ic_A = 0.0
-    q_ic_mA = q_ic_A * 1000
-
-    fig_iv.add_trace(go.Scatter(
-        x=[0.0, sign*V_CC], y=[sign*sat_ic_mag, 0.0],
-        mode='lines', line=dict(color='#0f172a', width=3), name='직류 부하선'))
     fig_iv.add_vline(x=sign*0.2, line=dict(color='#ef4444',width=1.5,dash='dash'))
 
-    q_x, q_y = sign*q_vce, sign*q_ic_mA
-    fig_iv.add_trace(go.Scatter(
-        x=[q_x], y=[q_y], mode='markers+text',
-        marker=dict(color='#ef4444',size=11,symbol='circle',line=dict(color='white',width=2)),
-        text=[f"Q ({sign*q_vce:.2f}V, {sign*q_ic_mA:.2f}mA)"],
-        textposition="top left" if bjt_type=="NPN" else "bottom right",
-        textfont=dict(size=10,color='#dc2626'), name="Q점"))
+    # ── 동작점(Q점): 카드와 같은 값 사용
+    q_vce, q_ic_mA = vce_signed, ic_mA
+    if mode_en != "Reverse Active":
+        y_max = max(y_max, q_ic_mA)
+        fig_iv.add_trace(go.Scatter(
+            x=[sign*q_vce], y=[sign*q_ic_mA], mode='markers+text',
+            marker=dict(color='#ef4444',size=11,symbol='circle',line=dict(color='white',width=2)),
+            text=[f"Q ({sign*q_vce:.2f}V, {sign*q_ic_mA:.2f}mA)"],
+            textposition="top left" if bjt_type=="NPN" else "bottom right",
+            textfont=dict(size=10,color='#dc2626'), name="Q점"))
+    else:
+        fig_iv.add_annotation(
+            xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False,
+            text="역방향 활성: 동작점이 이 출력 특성 영역 밖에 있어요",
+            font=dict(size=11, color="#a855f7"),
+            bgcolor="rgba(255,255,255,0.9)", bordercolor="#a855f7", borderwidth=1)
 
+    y_top = y_max*1.15 + 0.5
     fig_iv.update_layout(
         title=dict(text="I-V Characteristic Curve", font=dict(size=12, color="#64748b"), x=0.5, y=0.95, xanchor="center"),
-        xaxis_title="V_CE [V]", yaxis_title="I_C [mA]",
-        xaxis=dict(range=[-0.2, V_CC+1.2] if bjt_type=="NPN" else [-(V_CC+1.2), 0.2], showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
-        yaxis=dict(range=[-0.5, sat_ic_mag+1.5] if bjt_type=="NPN" else [-(sat_ic_mag+1.5), 0.5], showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
+        xaxis_title="V_CE [V]" if bjt_type=="NPN" else "V_EC [V]",
+        yaxis_title="I_C [mA]",
+        xaxis=dict(range=[x_min, x_max+0.4] if bjt_type=="NPN" else [-(x_max+0.4), -x_min],
+                   showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
+        yaxis=dict(range=[-0.5, y_top] if bjt_type=="NPN" else [-y_top, 0.5],
+                   showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#475569', zerolinewidth=1.5),
         height=320, margin=dict(l=10,r=10,t=40,b=10), showlegend=True,
-        legend=dict(x=0.75 if bjt_type=="NPN" else 0.02, y=0.98 if bjt_type=="NPN" else 0.15,
+        legend=dict(x=0.70 if bjt_type=="NPN" else 0.02, y=0.98 if bjt_type=="NPN" else 0.30,
                     bgcolor='rgba(255,255,255,0.9)', bordercolor='#cbd5e1', borderwidth=1, font=dict(size=9)),
         plot_bgcolor='white'
     )
