@@ -175,7 +175,7 @@ with col_left:
         ax.annotate("",xy=(arr_end,SIO2_BOTTOM-CH_THICK*0.4),xytext=(arr_start,SIO2_BOTTOM-CH_THICK*0.4),
                     arrowprops=dict(arrowstyle='->',color=carrier_color,lw=1.4),zorder=6)
     elif region=="Linear":
-        drain_thin=CH_THICK*(1.0-0.4*(vds/(vds_sat if vds_sat>0 else 1)))
+        drain_thin=CH_THICK*max(1.0-vds/vds_sat, 0.05)
         trap_pts=np.array([[GATE_X_START,SIO2_BOTTOM],[GATE_X_END,SIO2_BOTTOM],[GATE_X_END,SIO2_BOTTOM-drain_thin],[GATE_X_START,SIO2_BOTTOM-CH_THICK]])
         ax.add_patch(MplPolygon(trap_pts,closed=True,fc=ch_color,ec=ch_edge,lw=1.2,alpha=0.85,zorder=4))
     else:
